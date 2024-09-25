@@ -1,0 +1,43 @@
+QWindow#window {
+    background-color: #ffffff;
+}
+
+QScrollArea#scroll_area, QWidget#scroll_area_content {
+    background-color: transparent;
+}
+
+QFrame#separator {
+    background-color: #f4f4f4;
+}
+
+QPlainTextEdit#message_input {
+    background-color: #f2f2f5;
+    border-radius: 12px;
+    padding: 8px 6px 7px 6px;
+}
+
+QPushButton#send_button {
+    border: none;
+}
+
+QMessage {
+    border-radius: 12px;
+}
+
+QMessage[alignment = "left"] {
+    background-color: #eaeaea;
+    border-bottom-left-radius: 0px;
+}
+
+QMessage[alignment = "left"] QLabel {
+    color: #000000;
+}
+
+QMessage[alignment = "right"] {
+    background-color: #1da1f3;
+    border-bottom-right-radius: 0px;
+}
+
+QMessage[alignment = "right"] QLabel {
+    color: #ffffff;
+}
