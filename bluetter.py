@@ -1,5 +1,6 @@
-import sys
+import sys, base64
 from PyQt6 import QtCore, QtWidgets, QtGui
+from network import Client, Server
 
 FONT = QtGui.QFont("Segoe UI", 12)
 FONT_METRICS = QtGui.QFontMetrics(FONT)
@@ -9,7 +10,7 @@ MESSAGE_EDIT_WIDTH = 370
 
 class QMessage(QtWidgets.QFrame):
 
-    def __init__(self, alignment: QtCore.Qt.AlignmentFlag, text: str = "", attachment: bytearray = None) -> None:
+    def __init__(self, alignment: QtCore.Qt.AlignmentFlag, text: str = "", attachment: QtCore.QByteArray = None) -> None:
         super().__init__()
 
         width = MAX_MESSAGE_WIDTH if attachment else min(MAX_MESSAGE_WIDTH, FONT_METRICS.size(0, text).width())        
@@ -28,16 +29,19 @@ class QMessage(QtWidgets.QFrame):
         if attachment:
             pixmap = QtGui.QPixmap()
             pixmap.loadFromData(attachment)
+            r = pixmap.height() / pixmap.width()
+            height = int(r * width)
             self.attachment_label = QtWidgets.QLabel(self)
+            self.attachment_label.setObjectName("attachment")
             self.attachment_label.setPixmap(pixmap)
             self.attachment_label.setScaledContents(True)
-            self.attachment_label.setFixedWidth(width)
-            self.attachment_label.adjustSize()
+            self.attachment_label.setFixedSize(width, height)
             self.attachment_label.move(8, y)
-            y += self.attachment_label.height() + 4
+            y += height + 4
 
         self.alignment = alignment
         self.setFixedSize(width + 16, y)
+
 
 class QMessageEdit(QtWidgets.QFrame):
 
@@ -82,6 +86,14 @@ class QMessageEdit(QtWidgets.QFrame):
         self.text_edit.textChanged.connect(self.update_height)
         self.attachment_button.clicked.connect(self.add_attachment)
         self.remove_attachment_button.clicked.connect(self.remove_attachment)
+
+        self.text_edit.textChanged.connect(self.update_state)
+    
+    def update_state(self) -> None:
+        if self.text_edit.toPlainText():
+            self.attachment_button.setDisabled(True)
+        else:
+            self.attachment_button.setDisabled(False)
     
     def update_height(self) -> None:
         lines = self.text_edit.document().lineCount() - 1
@@ -95,19 +107,21 @@ class QMessageEdit(QtWidgets.QFrame):
             filter = "Изображение (*.png; *.jpg; *.jpeg)")[0]
         if file_name:
             with open(file_name, "rb") as file:
-                self.attachment = bytearray(file.read())
+                self.attachment = QtCore.QByteArray(file.read())
             self.attachment_label.setText(file_name)
 
             self.attachment_animation.setDirection(QtCore.QAbstractAnimation.Direction.Forward)
             self.attachment_animation.start()
+
+            self.text_edit.setDisabled(True)
     
     def remove_attachment(self) -> None:
-        self.attachment = None
-        self.hide_attachment_label()
-    
-    def hide_attachment_label(self) -> None:
-        self.attachment_animation.setDirection(QtCore.QAbstractAnimation.Direction.Backward)
-        self.attachment_animation.start()
+        if self.attachment:
+            self.attachment = None
+            self.attachment_animation.setDirection(QtCore.QAbstractAnimation.Direction.Backward)
+            self.attachment_animation.start()
+
+            self.text_edit.setDisabled(False)
 
 class QChatWidget(QtWidgets.QScrollArea):
 
@@ -138,9 +152,12 @@ class QChatWidget(QtWidgets.QScrollArea):
         self.content_widget.setFixedHeight(self.content_widget.height() + message.height() + 8)
 
 class QWindow(QtWidgets.QWidget):
-
+    
     def __init__(self) -> None:
         super().__init__()
+        self.receive_signal.connect(self.receive_message)
+
+        self.setup_connection()
 
         self.setFixedSize(450, 520)
         self.setWindowTitle("Bluetter")
@@ -178,8 +195,47 @@ class QWindow(QtWidgets.QWidget):
         self.send_button.setIcon(QtGui.QIcon(QtGui.QPixmap("assets/icons/send.png")))
         self.send_button.setIconSize(QtCore.QSize(28, 28))
         self.send_button.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+        self.send_button.clicked.connect(self.send_message)
 
         window_layout.addWidget(self.bottom_container)
+    
+    receive_signal = QtCore.pyqtSignal(str)
+    
+    def check_queue(self) -> None:
+        if self.message_queue:
+            self.chat_widget.add_message(self.message_queue.pop(0))
+    
+    def setup_connection(self) -> None:
+        try:
+            self.socket = Client(self)
+        except ConnectionRefusedError:
+            self.socket = Server(self)
+            self.socket.run()
+    
+    def send_message(self) -> None:
+        text = self.message_edit.text_edit.toPlainText()
+        attachment = self.message_edit.attachment
+        if text:
+            self.socket.send_message(text)
+        else:
+            encoded_image = base64.b64encode(attachment.data()).decode()
+            self.socket.send_image(encoded_image)
+        self.chat_widget.add_message(QMessage(QtCore.Qt.AlignmentFlag.AlignRight, text, attachment))
+
+        self.message_edit.remove_attachment()
+        self.message_edit.attachment_button.setDisabled(False)
+        self.message_edit.text_edit.clear()
+        self.message_edit.text_edit.setDisabled(False)
+
+    def receive_message(self, message) -> None:
+        if message.startswith("IMG:"):
+            image_data = message[4:]
+            attachment = QtCore.QByteArray.fromBase64(image_data.encode("utf-8"))
+            message = QMessage(alignment = QtCore.Qt.AlignmentFlag.AlignLeft, attachment = attachment)
+        elif message.startswith("TXT:"):
+            text_message = message[4:]
+            message = QMessage(alignment = QtCore.Qt.AlignmentFlag.AlignLeft, text = text_message)
+        self.chat_widget.add_message(message)
 
 def loadStyleSheet() -> str:
     file = QtCore.QFile("assets/styles/style.qss")
@@ -196,9 +252,5 @@ if __name__ == "__main__":
 
     window = QWindow()
     window.show()
-
-    window.chat_widget.add_message(QMessage(text = "Привет!", alignment = QtCore.Qt.AlignmentFlag.AlignRight))
-    window.chat_widget.add_message(QMessage(text = "Как дела?", alignment = QtCore.Qt.AlignmentFlag.AlignLeft))
-    window.chat_widget.add_message(QMessage(text = "Да ахуенно! А у тебя?", alignment = QtCore.Qt.AlignmentFlag.AlignRight))
 
     sys.exit(application.exec())

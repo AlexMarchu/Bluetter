@@ -25,6 +25,11 @@ QMessage {
     border-radius: 12px;
 }
 
+QMessage[alignment = "left"] QLabel#attachment {
+    border: 2px solid #f0f0f0;
+    border-radius: 12px;
+}
+
 QMessage[alignment = "left"] {
     background-color: #f0f0f0;
     border-bottom-left-radius: 0px;
