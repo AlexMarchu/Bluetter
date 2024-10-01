@@ -29,7 +29,7 @@ class QMessage(QtWidgets.QFrame):
         
         if attachment:
             pixmap = QtGui.QPixmap()
-            pixmap.loadFromData(get_rounded_image(attachment.data()))
+            pixmap.loadFromData(attachment.data())
             r = pixmap.height() / pixmap.width()
             height = int(r * width)
             self.attachment_label = QtWidgets.QLabel(self)
@@ -44,14 +44,14 @@ class QMessage(QtWidgets.QFrame):
         self.setFixedSize(width + 16, y)
     
     def get_rounded_image(self, image_bytes: bytes) -> QtCore.QByteArray:
-        image = Image.open(image_bytes)
+        image = Image.open(io.BytesIO(image_bytes))
         rounded_image = Image.new("RGBA", image.size)
         draw = ImageDraw.Draw(rounded_image)
-        draw.roundrect([(0, 0), image.size], 10, fill = "white")
+        draw.rounded_rectangle([(0, 0), image.size], 10, fill = "white")
         result = Image.alpha_composite(image.convert('RGBA'), rounded_image)
         byte_array = io.BytesIO()
-        result.save(byte_array, format = image.format)
-        return QByteArray(byte_array.getvalue())
+        result.save(byte_array, image.format)
+        return QtCore.QByteArray(byte_array.getvalue())
 
 class QMessageEdit(QtWidgets.QFrame):
 
@@ -160,6 +160,7 @@ class QChatWidget(QtWidgets.QScrollArea):
         message.show()
 
         self.content_widget.setFixedHeight(self.content_widget.height() + message.height() + 8)
+        self.verticalScrollBar().setValue(self.verticalScrollBar().maximum())
 
 class QWindow(QtWidgets.QWidget):
     
