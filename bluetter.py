@@ -156,7 +156,7 @@ class QWindow(QtWidgets.QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.receive_signal.connect(self.receive_message)
-
+        
         self.setup_connection()
 
         self.setFixedSize(450, 520)
@@ -206,11 +206,18 @@ class QWindow(QtWidgets.QWidget):
             self.chat_widget.add_message(self.message_queue.pop(0))
     
     def setup_connection(self) -> None:
-        try:
-            self.socket = Client(self)
-        except ConnectionRefusedError:
+        # try:
+        #     self.socket = Client(self)
+        # except ConnectionRefusedError:
+        #     self.socket = Server(self)
+        #     self.socket.run()
+        type = "server"
+        if type == "server":
             self.socket = Server(self)
             self.socket.run()
+        if type == "client":
+            self.socket = Client(self)
+            self.socket.connect_to_server()
     
     def send_message(self) -> None:
         text = self.message_edit.text_edit.toPlainText()
