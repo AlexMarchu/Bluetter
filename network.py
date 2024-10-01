@@ -10,11 +10,11 @@ class SocketConnection:
         self.socket = None
 
     def send_message(self, message: str) -> None:
-        message = "TXT:" + message + "\n"
+        message = "TXT:" + message + "||"
         self.socket.sendall(message.encode("utf-8"))
 
     def send_image(self, image_data: str) -> None:
-        message = "IMG:" + image_data + "\n"
+        message = "IMG:" + image_data + "||"
         self.socket.sendall(message.encode("utf-8"))
 
     def listen(self) -> None:
@@ -25,8 +25,8 @@ class SocketConnection:
                 if not data:
                     break  # Break if connection is closed
                 buffer += data
-                while "\n" in buffer:
-                    header, buffer = buffer.split("\n", 1)
+                while "||" in buffer:
+                    header, buffer = buffer.split("||", 1)
                     if header.startswith("IMG:") or header.startswith("TXT:"):
                         self.app.receive_signal.emit(header)
                     else:
