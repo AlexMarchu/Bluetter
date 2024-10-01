@@ -1,6 +1,7 @@
-import sys, base64
+import sys, base64, io
 from PyQt6 import QtCore, QtWidgets, QtGui
 from network import Client, Server
+from PIL import Image, ImageDraw
 
 FONT = QtGui.QFont("Segoe UI", 12)
 FONT_METRICS = QtGui.QFontMetrics(FONT)
@@ -28,7 +29,7 @@ class QMessage(QtWidgets.QFrame):
         
         if attachment:
             pixmap = QtGui.QPixmap()
-            pixmap.loadFromData(attachment)
+            pixmap.loadFromData(get_rounded_image(attachment.data()))
             r = pixmap.height() / pixmap.width()
             height = int(r * width)
             self.attachment_label = QtWidgets.QLabel(self)
@@ -41,7 +42,16 @@ class QMessage(QtWidgets.QFrame):
 
         self.alignment = alignment
         self.setFixedSize(width + 16, y)
-
+    
+    def get_rounded_image(self, image_bytes: bytes) -> QtCore.QByteArray:
+        image = Image.open(image_bytes)
+        rounded_image = Image.new("RGBA", image.size)
+        draw = ImageDraw.Draw(rounded_image)
+        draw.roundrect([(0, 0), image.size], 10, fill = "white")
+        result = Image.alpha_composite(image.convert('RGBA'), rounded_image)
+        byte_array = io.BytesIO()
+        result.save(byte_array, format = image.format)
+        return QByteArray(byte_array.getvalue())
 
 class QMessageEdit(QtWidgets.QFrame):
 
