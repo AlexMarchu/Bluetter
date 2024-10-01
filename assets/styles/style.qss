@@ -1,8 +1,8 @@
-QWindow#window {
+QWindow {
     background-color: #ffffff;
 }
 
-QScrollArea#scroll_area, QWidget#scroll_area_content {
+QChatWidget, QWidget#content_widget {
     background-color: transparent;
 }
 
@@ -10,13 +10,14 @@ QFrame#separator {
     background-color: #f4f4f4;
 }
 
-QPlainTextEdit#message_input {
+QPlainTextEdit#text_edit {
     background-color: #f2f2f5;
     border-radius: 12px;
-    padding: 8px 6px 7px 6px;
+    padding: 8px 40px 7px 6px;
 }
 
-QPushButton#send_button {
+QPushButton#attachment_button, QPushButton#remove_attachment_button, QPushButton#send_button {
+    background-color: transparent;
     border: none;
 }
 
@@ -25,7 +26,7 @@ QMessage {
 }
 
 QMessage[alignment = "left"] {
-    background-color: #eaeaea;
+    background-color: #f0f0f0;
     border-bottom-left-radius: 0px;
 }
 
@@ -34,10 +35,19 @@ QMessage[alignment = "left"] QLabel {
 }
 
 QMessage[alignment = "right"] {
-    background-color: #1da1f3;
+    background-color: #28a9f9;
     border-bottom-right-radius: 0px;
 }
 
 QMessage[alignment = "right"] QLabel {
     color: #ffffff;
+}
+
+QLabel#attachment_label {
+    background-color: #f2f2f5;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    font-size: 9pt;
+    font-weight: 600;
+    padding: 0px 20px 0px 4px;
 }
