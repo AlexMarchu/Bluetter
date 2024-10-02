@@ -61,11 +61,9 @@ class Client(SocketConnection):
                 break
 
         if self.server_ip:
-            print(1)
             self.socket.connect((self.server_ip, 2000))
             print("Connected to the server.")
             self.start_listen()
-
 
     def start_listen(self) -> None:
         threading.Thread(target=self.listen, daemon=True).start()
@@ -104,6 +102,6 @@ class Server(SocketConnection):
         # if self.broadcast_thread.is_alive():
         #     self.broadcast_thread.join()
 
-        # print("Broadcasting stopped.")
+        print("Broadcasting stopped.")
         # self.app.connection_signal.emit()
         threading.Thread(target=self.listen, daemon=True).start()
